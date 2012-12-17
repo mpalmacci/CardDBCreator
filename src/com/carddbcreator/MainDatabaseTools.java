@@ -1,5 +1,7 @@
 package com.carddbcreator;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -10,6 +12,26 @@ import com.magichat.Card;
 import com.magichat.Expansion;
 
 public class MainDatabaseTools {
+	/*
+	 * IMPORTANT NOTES TO RUN THIS PROGRAM: In order to run this you need to
+	 * first Open Oracle (download the latest version if necessary):
+	 * /Users/mpalmacci
+	 * /Documents/workspace/cockatrice_20120702/cockatrice/cockatrice_mac_20120630
+	 * The default location for the Cards database is at:
+	 * /Users/mpalmacci/Library/Application
+	 * Support/Cockatrice/Cockatrice/cards.xml This setting lives in the
+	 * Cockatrice Preferences In Oracle, select File/Download Sets
+	 * Information... Select the sets you want, then import all the Cards Go to
+	 * the Cards Database Location and add it to the directory:
+	 * /Users/mpalmacci/Documents/workspace/CardDBCreator
+	 * 
+	 * REPLACE ALL single quotation marks with two single quotation marks
+	 * 
+	 * REPLACE ALL &quot; with \"
+	 * 
+	 * REPLACE ALL * with \*
+	 */
+
 	public static final String KEY_EXPANSION_ROWID = "_id";
 	public static final String KEY_EXPANSION_NAME = "expansion_name";
 	public static final String KEY_EXPANSION_SHORTNAME = "expansion_shortname";
@@ -36,10 +58,6 @@ public class MainDatabaseTools {
 	public static final String KEY_EXPANSION_PIC_EXPANSION_ID = "expansion_pic_exp_id";
 	public static final String KEY_EXPANSION_PIC_PICURL = "expansion_pic_picurl";
 
-	private static final String DATABASE_NAME = "cards.db";
-	private static final String DATABASE_DRIVER = "org.sqlite.JDBC";
-	private static final String DATABASE_URL = "jdbc:sqlite:" + DATABASE_NAME;
-
 	private static final String DATABASE_TABLE_ALLEXPANSIONS = "Expansions";
 	private static final String DATABASE_TABLE_ALLCARDS = "Cards";
 	private static final String DATABASE_TABLE_EXPANSION_PIC = "ExpansionPics";
@@ -47,15 +65,17 @@ public class MainDatabaseTools {
 	public static void main(String[] args) {
 
 		try {
-			SQLiteDb db = new SQLiteDb(DATABASE_DRIVER, DATABASE_URL);
-			createDatabase(db);
-			setupCards(db);
+			SQLiteDb db = new SQLiteDb();
+			Connection conn = db.getConnection();
+			createSchema(conn);
+			setupCards(conn);
+			db.closeConnection();
 		} catch (Exception exc) {
 			exc.printStackTrace();
 		}
 	}
 
-	private static void createDatabase(SQLiteDb db) throws Exception {
+	private static void createSchema(Connection conn) throws SQLException {
 		// which will produce a legitimate Url for SqlLite JDBC :
 		// jdbc:sqlite:card.db
 		String sCreateExpansionTable = "CREATE TABLE "
@@ -93,25 +113,33 @@ public class MainDatabaseTools {
 				+ KEY_EXPANSION_ROWID + "));";
 
 		try {
-			db.executeQry(dropTable(DATABASE_TABLE_ALLEXPANSIONS));
-			db.executeQry(dropTable(DATABASE_TABLE_ALLCARDS));
-			db.executeQry(dropTable(DATABASE_TABLE_EXPANSION_PIC));
+			PreparedStatement dropExpansions = conn
+					.prepareStatement(dropTable(DATABASE_TABLE_ALLEXPANSIONS));
+			PreparedStatement dropCards = conn
+					.prepareStatement(dropTable(DATABASE_TABLE_ALLCARDS));
+			PreparedStatement dropPics = conn
+					.prepareStatement(dropTable(DATABASE_TABLE_EXPANSION_PIC));
 
-			db.executeQry(sCreateExpansionTable);
-			db.executeQry(sCreateCardTable);
-			db.executeQry(sCreateExpansionPicTable);
-		} catch (Exception exc) {
+			dropExpansions.execute();
+			dropCards.execute();
+			dropPics.execute();
+
+			PreparedStatement createExpansionTable = conn
+					.prepareStatement(sCreateExpansionTable);
+			PreparedStatement createCardTable = conn
+					.prepareStatement(sCreateCardTable);
+			PreparedStatement createExpansionPicTable = conn
+					.prepareStatement(sCreateExpansionPicTable);
+
+			createExpansionTable.execute();
+			createCardTable.execute();
+			createExpansionPicTable.execute();
+		} catch (SQLException exc) {
 			exc.printStackTrace();
-		} finally {
-			try {
-				db.closeConnection();
-			} catch (Exception exc) {
-				exc.printStackTrace();
-			}
 		}
 	}
 
-	private static void setupCards(SQLiteDb db) {
+	private static void setupCards(Connection conn) throws SQLException {
 		List<Expansion> allExpansions = new ArrayList<Expansion>();
 		List<Card> allCards = new ArrayList<Card>();
 
@@ -125,20 +153,22 @@ public class MainDatabaseTools {
 		allExpansions = sdp.getAllExpansions();
 
 		for (Expansion cs : allExpansions) {
-			String insertExpansion = "INSERT INTO"
+			String sInsertExpansion = "INSERT INTO "
 					+ DATABASE_TABLE_ALLEXPANSIONS + "(" + KEY_EXPANSION_NAME
-					+ ", " + KEY_EXPANSION_SHORTNAME + ") VALUES ("
-					+ cs.getName() + ", " + cs.getShortName() + ");";
+					+ ", " + KEY_EXPANSION_SHORTNAME + ") VALUES ('"
+					+ cs.getName() + "', '" + cs.getShortName() + "');";
 
 			try {
-				db.executeQry(insertExpansion);
+				PreparedStatement insertExpansion = conn
+						.prepareStatement(sInsertExpansion);
+				insertExpansion.execute();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
 		System.out.println("Done setting up Expansions.");
 
-		allExpansions = getAllExpansions(db);
+		allExpansions = getAllExpansions(conn);
 		allCards = sdp.getAllCards();
 
 		int iBlue, iBlack, iWhite, iGreen, iRed;
@@ -149,10 +179,10 @@ public class MainDatabaseTools {
 			iGreen = c.isGreen() ? 1 : 0;
 			iRed = c.isRed() ? 1 : 0;
 
-			String insertCard = "";
+			String sInsertCard = "";
 
 			if (c.getCardType().contains("Creature")) {
-				insertCard = "INSERT INTO "
+				sInsertCard = "INSERT INTO "
 						+ DATABASE_TABLE_ALLCARDS
 						+ " ("
 						+ KEY_CARD_NAME
@@ -184,58 +214,20 @@ public class MainDatabaseTools {
 						+ KEY_CARD_TOUGHNESS
 						+ ", "
 						+ KEY_CARD_TEXT
-						+ ") VALUES ("
+						+ ") VALUES ('"
 						+ c.getName()
-						+ ", "
+						+ "', "
 						+ getExpansionId(
-								c.getDefaultExpansion().getShortName(),
-								allExpansions) + ", "
-						+ c.getDefaultPicURL().toString() + ", " + iBlack
-						+ ", " + iBlue + ", " + iWhite + ", " + iGreen + ", "
-						+ iRed + ", " + c.getManaCost() + ", " + c.getCMC()
-						+ ", " + c.getCardType() + ", " + c.getCardSubTypes()
-						+ ", " + c.getPower() + ", " + c.getToughness() + ", "
-						+ c.getText() + ");";
+								c.getDefaultExpansion().getShortName(), conn)
+						+ ", '" + c.getDefaultPicURL().toString() + "', "
+						+ iBlack + ", " + iBlue + ", " + iWhite + ", " + iGreen
+						+ ", " + iRed + ", '" + c.getManaCost() + "', "
+						+ c.getCMC() + ", '" + c.getCardType() + "', '"
+						+ c.getCardSubType() + "', '" + c.getPower() + "', '"
+						+ c.getToughness() + "', '" + c.getText() + "')";
 			} else if (!c.getCardType().contains("Land")
 					&& !c.getCardType().contains("Scheme")) {
-				insertCard = "INSERT INTO "
-						+ DATABASE_TABLE_ALLCARDS
-						+ " ("
-						+ KEY_CARD_NAME
-						+ ", "
-						+ KEY_CARD_DEFAULT_EXPANSION
-						+ ", "
-						+ KEY_CARD_DEFAULT_PICURL
-						+ ", "
-						+ KEY_CARD_ISBLACK
-						+ ", "
-						+ KEY_CARD_ISBLUE
-						+ ", "
-						+ KEY_CARD_ISWHITE
-						+ ", "
-						+ KEY_CARD_ISGREEN
-						+ ", "
-						+ KEY_CARD_ISRED
-						+ ", "
-						+ KEY_CARD_CMC
-						+ ", "
-						+ KEY_CARD_TYPE
-						+ ", "
-						+ KEY_CARD_SUBTYPES
-						+ ", "
-						+ KEY_CARD_TEXT
-						+ ") VALUES ("
-						+ c.getName()
-						+ ", "
-						+ getExpansionId(
-								c.getDefaultExpansion().getShortName(),
-								allExpansions) + ", "
-						+ c.getDefaultPicURL().toString() + ", " + iBlack
-						+ ", " + iBlue + ", " + iWhite + ", " + iGreen + ", "
-						+ iRed + ", 0, " + c.getCardType() + ", "
-						+ c.getCardSubTypes() + ", " + c.getText() + ");";
-			} else {
-				insertCard = "INSERT INTO "
+				sInsertCard = "INSERT INTO "
 						+ DATABASE_TABLE_ALLCARDS
 						+ " ("
 						+ KEY_CARD_NAME
@@ -263,79 +255,104 @@ public class MainDatabaseTools {
 						+ KEY_CARD_SUBTYPES
 						+ ", "
 						+ KEY_CARD_TEXT
-						+ ") VALUES ("
+						+ ") VALUES ('"
 						+ c.getName()
-						+ ", "
+						+ "', "
 						+ getExpansionId(
-								c.getDefaultExpansion().getShortName(),
-								allExpansions) + ", "
-						+ c.getDefaultPicURL().toString() + ", " + iBlack
-						+ ", " + iBlue + ", " + iWhite + ", " + iGreen + ", "
-						+ iRed + ", " + c.getManaCost() + ", " + c.getCMC()
-						+ ", " + c.getCardType() + ", " + c.getCardSubTypes()
-						+ ", " + c.getText() + ");";
+								c.getDefaultExpansion().getShortName(), conn)
+						+ ", '" + c.getDefaultPicURL().toString() + "', "
+						+ iBlack + ", " + iBlue + ", " + iWhite + ", " + iGreen
+						+ ", " + iRed + ", '" + c.getManaCost() + "', "
+						+ c.getCMC() + ", '" + c.getCardType() + "', '"
+						+ c.getCardSubType() + "', '" + c.getText() + "')";
+			} else {
+				sInsertCard = "INSERT INTO "
+						+ DATABASE_TABLE_ALLCARDS
+						+ " ("
+						+ KEY_CARD_NAME
+						+ ", "
+						+ KEY_CARD_DEFAULT_EXPANSION
+						+ ", "
+						+ KEY_CARD_DEFAULT_PICURL
+						+ ", "
+						+ KEY_CARD_ISBLACK
+						+ ", "
+						+ KEY_CARD_ISBLUE
+						+ ", "
+						+ KEY_CARD_ISWHITE
+						+ ", "
+						+ KEY_CARD_ISGREEN
+						+ ", "
+						+ KEY_CARD_ISRED
+						+ ", "
+						+ KEY_CARD_CMC
+						+ ", "
+						+ KEY_CARD_TYPE
+						+ ", "
+						+ KEY_CARD_SUBTYPES
+						+ ", "
+						+ KEY_CARD_TEXT
+						+ ") VALUES ('"
+						+ c.getName()
+						+ "', "
+						+ getExpansionId(
+								c.getDefaultExpansion().getShortName(), conn)
+						+ ", '" + c.getDefaultPicURL().toString()
+						+ "', 0, 0, 0, 0, 0, 0, '" + c.getCardType() + "', '"
+						+ c.getCardSubType() + "', '" + c.getText() + "')";
 			}
 			try {
-				db.executeQry(insertCard);
+				PreparedStatement insertCard = conn
+						.prepareStatement(sInsertCard);
+				insertCard.execute();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-		}
-		System.out.println("Done setting up Cards.");
 
-		allCards = getAllCards(db);
+			int cardId = getCardId(c.getName(), conn);
 
-		for (Card c : allCards) {
+			String sInsertExpansionPic;
+
 			for (Expansion cs : c.getAllExpansions()) {
-				int cardId = 0;
-				for (Card cd : allCards) {
-					if (cd.getName().equals(cd.getName())) {
-						cardId = cd.getId();
-					}
-				}
-				if (cardId == 0) {
-					System.out
-							.println("MagicHatDB.setupCards: Card Id was not found.");
-				}
-				String insertExpansionPic = "INSERT INTO "
+				sInsertExpansionPic = "INSERT INTO "
 						+ DATABASE_TABLE_EXPANSION_PIC + " ("
 						+ KEY_EXPANSION_PIC_EXPANSION_ID + ", "
 						+ KEY_EXPANSION_PIC_CARD_ID + ", "
-						+ KEY_EXPANSION_PIC_PICURL + ") VALUES ("
-						+ getExpansionId(cs.getShortName(), allExpansions)
-						+ ", " + cardId + ", "
-						+ c.getExpansionImages().get(cs).toString() + ");";
+						+ KEY_EXPANSION_PIC_PICURL + ") VALUES ('"
+						+ getExpansionId(cs.getShortName(), conn) + "', "
+						+ cardId + ", '"
+						+ c.getExpansionImages().get(cs).toString() + "')";
 				try {
-					db.executeQry(insertExpansionPic);
+					PreparedStatement insertExpansionPic = conn
+							.prepareStatement(sInsertExpansionPic);
+					insertExpansionPic.execute();
 				} catch (SQLException e) {
 					e.printStackTrace();
 				}
 			}
 		}
-		System.out.println("Done setting up Card Pictures.");
+		System.out.println("Done setting up Cards and Pictures.");
 	}
 
-	private static List<Expansion> getAllExpansions(SQLiteDb db) {
+	private static List<Expansion> getAllExpansions(Connection conn) {
 		List<Expansion> allExpansions = new ArrayList<Expansion>();
 
-		String selectAllExpansions = "SELECT * FROM "
+		String sSelectAllExpansions = "SELECT * FROM "
 				+ DATABASE_TABLE_ALLEXPANSIONS;
 
 		Expansion exp;
 		try {
-			ResultSet expRS = db.executeQry(selectAllExpansions);
-			try {
-				while (expRS.next()) {
-					exp = new Expansion(expRS.getInt(KEY_EXPANSION_ROWID),
-							expRS.getString(KEY_EXPANSION_NAME),
-							expRS.getString(KEY_EXPANSION_SHORTNAME));
+			PreparedStatement selectAllExpansions = conn
+					.prepareStatement(sSelectAllExpansions);
+			ResultSet expRS = selectAllExpansions.executeQuery();
+			while (expRS.next()) {
+				exp = new Expansion(expRS.getInt(KEY_EXPANSION_ROWID),
+						expRS.getString(KEY_EXPANSION_NAME),
+						expRS.getString(KEY_EXPANSION_SHORTNAME));
 
-					allExpansions.add(exp);
-				}
-				expRS.close();
-			} catch (Exception e) {
-				e.printStackTrace();
+				allExpansions.add(exp);
 			}
+			expRS.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -345,39 +362,37 @@ public class MainDatabaseTools {
 		return allExpansions;
 	}
 
-	private static List<Card> getAllCards(SQLiteDb db) {
+	private static List<Card> getAllCards(Connection conn) {
 		List<Card> allCards = new ArrayList<Card>();
 
-		String selectAllCards = "SELECT * FROM " + DATABASE_TABLE_ALLCARDS;
-		String selectExpansionPics = "SELECT * FROM "
-				+ DATABASE_TABLE_EXPANSION_PIC + ", "
-				+ DATABASE_TABLE_ALLEXPANSIONS + " WHERE "
-				+ DATABASE_TABLE_EXPANSION_PIC + "." + KEY_EXPANSION_PIC_EXPANSION_ID
-				+ " = " + DATABASE_TABLE_ALLEXPANSIONS + "."
-				+ KEY_EXPANSION_ROWID + ";";
+		String sSelectAllCards = "SELECT * FROM " + DATABASE_TABLE_ALLCARDS;
+		String sSelectExpansionPics = "SELECT * FROM "
+				+ DATABASE_TABLE_ALLEXPANSIONS;
 
 		Card c;
 		try {
-			ResultSet cRS = db.executeQry(selectAllCards);
-			try {
-				while (cRS.next()) {
-					ResultSet expRS = db.executeQry(selectExpansionPics);
-					List<Expansion> cardExpansions = new ArrayList<Expansion>();
-					while (expRS.next()) {
-						cardExpansions.add(new Expansion(expRS
-								.getInt(DATABASE_TABLE_ALLEXPANSIONS + "."
-										+ KEY_EXPANSION_ROWID), expRS.getString(DATABASE_TABLE_ALLEXPANSIONS + "." + KEY_EXPANSION_NAME), expRS.getString(DATABASE_TABLE_ALLEXPANSIONS + "." + KEY_EXPANSION_SHORTNAME)));
-					}
-
-					c = new Card(cRS.getInt(KEY_EXPANSION_ROWID),
-							cRS.getString(KEY_EXPANSION_NAME), cardExpansions);
-
-					allCards.add(c);
+			PreparedStatement selectAllCards = conn
+					.prepareStatement(sSelectAllCards);
+			ResultSet cRS = selectAllCards.executeQuery();
+			while (cRS.next()) {
+				PreparedStatement selectExpansionPics = conn
+						.prepareStatement(sSelectExpansionPics);
+				ResultSet expRS = selectExpansionPics.executeQuery();
+				List<Expansion> cardExpansions = new ArrayList<Expansion>();
+				while (expRS.next()) {
+					cardExpansions.add(new Expansion(expRS
+							.getInt(KEY_EXPANSION_ROWID), expRS
+							.getString(KEY_EXPANSION_NAME), expRS
+							.getString(KEY_EXPANSION_SHORTNAME)));
 				}
-				cRS.close();
-			} catch (Exception e) {
-				e.printStackTrace();
+				expRS.close();
+
+				c = new Card(cRS.getInt(KEY_CARD_ROWID),
+						cRS.getString(KEY_CARD_NAME), cardExpansions);
+
+				allCards.add(c);
 			}
+			cRS.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -387,15 +402,45 @@ public class MainDatabaseTools {
 		return allCards;
 	}
 
-	private static int getExpansionId(String shortName,
-			List<Expansion> allExpansions) {
-		for (Expansion exp : allExpansions) {
-			if (exp.getShortName().equals(shortName)) {
-				return exp.getId();
-			}
+	private static int getCardId(String name, Connection conn) {
+		int cardId = 0;
+
+		String sSelectCardByName = "SELECT * FROM " + DATABASE_TABLE_ALLCARDS
+				+ " WHERE " + KEY_CARD_NAME + " = '" + name + "'";
+
+		try {
+			PreparedStatement selectCardByName = conn
+					.prepareStatement(sSelectCardByName);
+			ResultSet cRS = selectCardByName.executeQuery();
+
+			// TODO Check that there is just one ID that has returned
+			cardId = cRS.getInt(KEY_CARD_ROWID);
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
-		System.out.println("The Expansion wasn't found in getExpansionId");
-		return 0;
+
+		return cardId;
+	}
+
+	private static int getExpansionId(String shortName, Connection conn) {
+		int expId = 0;
+
+		String sSelectExpBySName = "SELECT * FROM "
+				+ DATABASE_TABLE_ALLEXPANSIONS + " WHERE "
+				+ KEY_EXPANSION_SHORTNAME + " = '" + shortName + "'";
+
+		try {
+			PreparedStatement selectExpBySName = conn
+					.prepareStatement(sSelectExpBySName);
+			ResultSet cRS = selectExpBySName.executeQuery();
+
+			// TODO Check that there is just one ID that has returned
+			expId = cRS.getInt(KEY_CARD_ROWID);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return expId;
 	}
 
 	private static String dropTable(String tableName) {

@@ -47,10 +47,10 @@ public class SAXCardsActivityHandler extends DefaultHandler {
 	@Override
 	public void startElement(String uri, String localName, String qName,
 			Attributes attributes) throws SAXException {
-		if (localName.equals("cards")) {
+		if (qName.equals("cards")) {
 			isExp = false;
 		}
-		if (localName.equals("set") && !isExp) {
+		if (qName.equals("set") && !isExp) {
 			try {
 				picURL.add(new URL(attributes.getValue("picURL")));
 			} catch (MalformedURLException urlEx) {
@@ -69,34 +69,34 @@ public class SAXCardsActivityHandler extends DefaultHandler {
 	public void endElement(String uri, String localName, String qName)
 			throws SAXException {
 		if (isExp) {
-			if (localName.equals("name")) {
+			if (qName.equals("name")) {
 				shortName = charVal;
-			} else if (localName.equals("longname")) {
+			} else if (qName.equals("longname")) {
 				name = charVal;
 
 				exp = new Expansion(name, shortName);
 				allExpansions.add(exp);
 			}
 		} else {
-			if (localName.equals("name")) {
+			if (qName.equals("name")) {
 				shortName = charVal;
-			} else if (localName.equals("set")) {
+			} else if (qName.equals("set")) {
 				for (Expansion expan : allExpansions) {
 					if (expan.getShortName().equals(charVal)) {
 						expansions.add(expan);
 						break;
 					}
 				}
-			} else if (localName.equals("color")) {
+			} else if (qName.equals("color")) {
 				color.add(charVal);
 				k++;
-			} else if (localName.equals("manacost")) {
+			} else if (qName.equals("manacost")) {
 				manaCost = charVal;
-			} else if (localName.equals("type")) {
+			} else if (qName.equals("type")) {
 				type = charVal;
-			} else if (localName.equals("pt")) {
+			} else if (qName.equals("pt")) {
 				pt = charVal;
-			} else if (localName.equals("text")) {
+			} else if (qName.equals("text")) {
 				text = charVal;
 
 				c = new Card(shortName, expansions, picURL, color, manaCost, type, pt,
