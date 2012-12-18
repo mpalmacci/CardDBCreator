@@ -99,8 +99,8 @@ public class SAXCardsActivityHandler extends DefaultHandler {
 			} else if (qName.equals("text")) {
 				text = charVal;
 
-				c = new Card(shortName, expansions, picURL, color, manaCost, type, pt,
-						text);
+				c = new Card(shortName, expansions, picURL, color, manaCost,
+						type, pt, text);
 				allCards.add(c);
 
 				expansions.clear();

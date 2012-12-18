@@ -3,7 +3,7 @@
 	<name>CardDBCreator</name>
 	<comment></comment>
 	<projects>
-		<project>The Magic Hat</project>
+		<project>TheMagicHat</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

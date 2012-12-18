@@ -13,7 +13,7 @@ public class SQLiteDb {
 
 	public SQLiteDb() throws Exception {
 		sDriver = "org.sqlite.JDBC";
-		sUrl = "jdbc:sqlite:/Users/mpalmacci/The Magic Hat/res/raw/cards.db";
+		sUrl = "jdbc:sqlite:/Users/mpalmacci/Documents/workspace/TheMagicHat/assets/cards.db";
 		setConnection();
 		setStatement();
 	}

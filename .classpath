@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry exported="true" kind="var" path="JRE_SRC"/>
+	<classpathentry kind="var" path="JRE_SRC"/>
 	<classpathentry kind="var" path="JRE_LIB"/>
-	<classpathentry kind="lib" path="/Users/mpalmacci/Documents/workspace/sqlite-jdbc-3.7.2.jar"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/TheMagicHat"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/TheMagicHat"/>
+	<classpathentry kind="lib" path="/Users/mpalmacci/sqlite-jdbc-3.7.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
