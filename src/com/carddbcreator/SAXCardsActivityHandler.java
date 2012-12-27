@@ -21,20 +21,17 @@ public class SAXCardsActivityHandler extends DefaultHandler {
 
 	String charVal = "";
 	boolean isExp = true;
+	boolean isText = false;
 
 	// Expansion data types
 	String shortName = "", name = "";
 
 	// Card data types
 	String manaCost = "", type = "", pt = "", text = "";
-	List<String> color = new ArrayList<String>();
+	List<String> colors = new ArrayList<String>();
 	List<Expansion> expansions = new ArrayList<Expansion>();
 	List<URL> picURL = new ArrayList<URL>();
 	HashMap<Expansion, URL> setImages;
-	// i is used as the index tracker for the set input values
-	// j is used for picURL in the same manner
-	// k is used for color
-	int power = 0, toughness = 0, i = 0, k = 0;
 
 	public List<Expansion> getAllExpansions() {
 		return allExpansions;
@@ -57,12 +54,21 @@ public class SAXCardsActivityHandler extends DefaultHandler {
 				urlEx.printStackTrace();
 			}
 		}
+		if (qName.equals("text")) {
+			isText = true;
+		}
 	}
 
 	@Override
 	public void characters(char[] ch, int start, int length)
 			throws SAXException {
 		charVal = new String(ch, start, length);
+		
+		// This is to compile all the Text values into one
+		// SAX has a limit to the amount of characters in 'ch'
+		if (isText) {
+			text = text + charVal;
+		}
 	}
 
 	@Override
@@ -88,8 +94,7 @@ public class SAXCardsActivityHandler extends DefaultHandler {
 					}
 				}
 			} else if (qName.equals("color")) {
-				color.add(charVal);
-				k++;
+				colors.add(charVal);
 			} else if (qName.equals("manacost")) {
 				manaCost = charVal;
 			} else if (qName.equals("type")) {
@@ -97,15 +102,15 @@ public class SAXCardsActivityHandler extends DefaultHandler {
 			} else if (qName.equals("pt")) {
 				pt = charVal;
 			} else if (qName.equals("text")) {
-				text = charVal;
-
-				c = new Card(shortName, expansions, picURL, color, manaCost,
+				c = new Card(shortName, expansions, picURL, colors, manaCost,
 						type, pt, text);
 				allCards.add(c);
 
-				expansions.clear();
-				picURL.clear();
-				color.clear();
+				expansions = new ArrayList<Expansion>();
+				picURL = new ArrayList<URL>();
+				colors = new ArrayList<String>();
+				isText = false;
+				text = new String();
 			}
 		}
 	}
