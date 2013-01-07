@@ -10,7 +10,7 @@ import java.util.List;
 
 import com.magichat.Card;
 import com.magichat.Expansion;
-import com.magichat.MagicHatDbHelper;
+import com.magichat.CardDbUtil;
 
 public class MainDatabaseTools {
 	/*
@@ -32,7 +32,8 @@ public class MainDatabaseTools {
 	 * 
 	 * REPLACE ALL * with \*
 	 */
-	// private static final MagicHatDbHelper cardDb = new MagicHatDbHelper();
+
+	private static String ANDROID_TABLE_NAME = "android_metadata";
 
 	public static void main(String[] args) {
 
@@ -51,54 +52,57 @@ public class MainDatabaseTools {
 		// which will produce a legitimate Url for SqlLite JDBC :
 		// jdbc:sqlite:card.db
 		String sCreateExpansionTable = "CREATE TABLE "
-				+ MagicHatDbHelper.DB_TABLE_ALLEXPANSIONS + " ("
-				+ MagicHatDbHelper.KEY_EXPANSION_ROWID
+				+ CardDbUtil.DB_TABLE_ALLEXPANSIONS + " ("
+				+ CardDbUtil.KEY_EXPANSION_ROWID
 				+ " INTEGER PRIMARY KEY AUTOINCREMENT, "
-				+ MagicHatDbHelper.KEY_EXPANSION_NAME + " TEXT NOT NULL, "
-				+ MagicHatDbHelper.KEY_EXPANSION_SHORTNAME + " TEXT NOT NULL);";
+				+ CardDbUtil.KEY_EXPANSION_NAME + " TEXT NOT NULL, "
+				+ CardDbUtil.KEY_EXPANSION_SHORTNAME + " TEXT NOT NULL);";
 		String sCreateCardTable = "CREATE TABLE "
-				+ MagicHatDbHelper.DB_TABLE_ALLCARDS + " ("
-				+ MagicHatDbHelper.KEY_CARD_ROWID
+				+ CardDbUtil.DB_TABLE_ALLCARDS + " ("
+				+ CardDbUtil.KEY_CARD_ROWID
 				+ " INTEGER PRIMARY KEY AUTOINCREMENT, "
-				+ MagicHatDbHelper.KEY_CARD_NAME + " TEXT NOT NULL, "
-				+ MagicHatDbHelper.KEY_CARD_ISBLUE + " INTEGER NOT NULL, "
-				+ MagicHatDbHelper.KEY_CARD_ISBLACK + " INTEGER NOT NULL, "
-				+ MagicHatDbHelper.KEY_CARD_ISWHITE + " INTEGER NOT NULL, "
-				+ MagicHatDbHelper.KEY_CARD_ISGREEN + " INTEGER NOT NULL, "
-				+ MagicHatDbHelper.KEY_CARD_ISRED + " INTEGER NOT NULL, "
-				+ MagicHatDbHelper.KEY_CARD_MANACOST + " TEXT, "
-				+ MagicHatDbHelper.KEY_CARD_CMC + " INTEGER NOT NULL, "
-				+ MagicHatDbHelper.KEY_CARD_TYPE + " TEXT NOT NULL, "
-				+ MagicHatDbHelper.KEY_CARD_SUBTYPES + " TEXT, "
-				+ MagicHatDbHelper.KEY_CARD_POWER + " INTEGER, "
-				+ MagicHatDbHelper.KEY_CARD_TOUGHNESS + " INTEGER, "
-				+ MagicHatDbHelper.KEY_CARD_RARITY + " TEXT, "
-				+ MagicHatDbHelper.KEY_CARD_TEXT + " TEXT);";
+				+ CardDbUtil.KEY_CARD_NAME + " TEXT NOT NULL, "
+				+ CardDbUtil.KEY_CARD_ISBLUE + " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_CARD_ISBLACK + " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_CARD_ISWHITE + " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_CARD_ISGREEN + " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_CARD_ISRED + " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_CARD_MANACOST + " TEXT, "
+				+ CardDbUtil.KEY_CARD_CMC + " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_CARD_TYPE + " TEXT NOT NULL, "
+				+ CardDbUtil.KEY_CARD_SUBTYPES + " TEXT, "
+				+ CardDbUtil.KEY_CARD_POWER + " INTEGER, "
+				+ CardDbUtil.KEY_CARD_TOUGHNESS + " INTEGER, "
+				+ CardDbUtil.KEY_CARD_RARITY + " TEXT, "
+				+ CardDbUtil.KEY_CARD_TEXT + " TEXT);";
 		String sCreateExpansionPicTable = "CREATE TABLE "
-				+ MagicHatDbHelper.DB_TABLE_REL_CARD_EXP + " ("
-				+ MagicHatDbHelper.KEY_REL_CARD_EXP_ROWID
+				+ CardDbUtil.DB_TABLE_REL_CARD_EXP + " ("
+				+ CardDbUtil.KEY_REL_CARD_EXP_ROWID
 				+ " INTEGER PRIMARY KEY AUTOINCREMENT, "
-				+ MagicHatDbHelper.KEY_REL_CARD_ID + " INTEGER NOT NULL, "
-				+ MagicHatDbHelper.KEY_REL_EXP_ID + " INTEGER NOT NULL, "
-				+ MagicHatDbHelper.KEY_REL_PIC_URL
-				+ " TEXT NOT NULL, FOREIGN KEY(" + MagicHatDbHelper.KEY_REL_CARD_ID
-				+ ") REFERENCES " + MagicHatDbHelper.DB_TABLE_ALLCARDS + "("
-				+ MagicHatDbHelper.KEY_CARD_ROWID + "), FOREIGN KEY("
-				+ MagicHatDbHelper.KEY_REL_EXP_ID + ") REFERENCES "
-				+ MagicHatDbHelper.DB_TABLE_ALLEXPANSIONS + "("
-				+ MagicHatDbHelper.KEY_EXPANSION_ROWID + "));";
+				+ CardDbUtil.KEY_REL_CARD_ID + " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_REL_EXP_ID + " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_REL_PIC_URL + " TEXT NOT NULL, FOREIGN KEY("
+				+ CardDbUtil.KEY_REL_CARD_ID + ") REFERENCES "
+				+ CardDbUtil.DB_TABLE_ALLCARDS + "("
+				+ CardDbUtil.KEY_CARD_ROWID + "), FOREIGN KEY("
+				+ CardDbUtil.KEY_REL_EXP_ID + ") REFERENCES "
+				+ CardDbUtil.DB_TABLE_ALLEXPANSIONS + "("
+				+ CardDbUtil.KEY_EXPANSION_ROWID + "));";
 
 		try {
 			PreparedStatement dropExpansions = conn
-					.prepareStatement(dropTable(MagicHatDbHelper.DB_TABLE_ALLEXPANSIONS));
+					.prepareStatement(dropTable(CardDbUtil.DB_TABLE_ALLEXPANSIONS));
 			PreparedStatement dropCards = conn
-					.prepareStatement(dropTable(MagicHatDbHelper.DB_TABLE_ALLCARDS));
+					.prepareStatement(dropTable(CardDbUtil.DB_TABLE_ALLCARDS));
 			PreparedStatement dropPics = conn
-					.prepareStatement(dropTable(MagicHatDbHelper.DB_TABLE_REL_CARD_EXP));
+					.prepareStatement(dropTable(CardDbUtil.DB_TABLE_REL_CARD_EXP));
+			PreparedStatement dropDroid = conn
+					.prepareStatement(dropTable(ANDROID_TABLE_NAME));
 
 			dropExpansions.execute();
 			dropCards.execute();
 			dropPics.execute();
+			dropDroid.execute();
 
 			PreparedStatement createExpansionTable = conn
 					.prepareStatement(sCreateExpansionTable);
@@ -130,9 +134,9 @@ public class MainDatabaseTools {
 
 		for (Expansion cs : allExpansions) {
 			String sInsertExpansion = "INSERT INTO "
-					+ MagicHatDbHelper.DB_TABLE_ALLEXPANSIONS + "("
-					+ MagicHatDbHelper.KEY_EXPANSION_NAME + ", "
-					+ MagicHatDbHelper.KEY_EXPANSION_SHORTNAME + ") VALUES ('"
+					+ CardDbUtil.DB_TABLE_ALLEXPANSIONS + "("
+					+ CardDbUtil.KEY_EXPANSION_NAME + ", "
+					+ CardDbUtil.KEY_EXPANSION_SHORTNAME + ") VALUES ('"
 					+ cs.getName() + "', '" + cs.getShortName() + "');";
 
 			try {
@@ -160,21 +164,20 @@ public class MainDatabaseTools {
 			sInsertCard = new String();
 
 			if (c.getCardType().contains("Creature")) {
-				sInsertCard = "INSERT INTO "
-						+ MagicHatDbHelper.DB_TABLE_ALLCARDS + " ("
-						+ MagicHatDbHelper.KEY_CARD_NAME + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISBLACK + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISBLUE + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISWHITE + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISGREEN + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISRED + ", "
-						+ MagicHatDbHelper.KEY_CARD_MANACOST + ", "
-						+ MagicHatDbHelper.KEY_CARD_CMC + ", "
-						+ MagicHatDbHelper.KEY_CARD_TYPE + ", "
-						+ MagicHatDbHelper.KEY_CARD_SUBTYPES + ", "
-						+ MagicHatDbHelper.KEY_CARD_POWER + ", "
-						+ MagicHatDbHelper.KEY_CARD_TOUGHNESS + ", "
-						+ MagicHatDbHelper.KEY_CARD_TEXT + ") VALUES ('"
+				sInsertCard = "INSERT INTO " + CardDbUtil.DB_TABLE_ALLCARDS
+						+ " (" + CardDbUtil.KEY_CARD_NAME + ", "
+						+ CardDbUtil.KEY_CARD_ISBLACK + ", "
+						+ CardDbUtil.KEY_CARD_ISBLUE + ", "
+						+ CardDbUtil.KEY_CARD_ISWHITE + ", "
+						+ CardDbUtil.KEY_CARD_ISGREEN + ", "
+						+ CardDbUtil.KEY_CARD_ISRED + ", "
+						+ CardDbUtil.KEY_CARD_MANACOST + ", "
+						+ CardDbUtil.KEY_CARD_CMC + ", "
+						+ CardDbUtil.KEY_CARD_TYPE + ", "
+						+ CardDbUtil.KEY_CARD_SUBTYPES + ", "
+						+ CardDbUtil.KEY_CARD_POWER + ", "
+						+ CardDbUtil.KEY_CARD_TOUGHNESS + ", "
+						+ CardDbUtil.KEY_CARD_TEXT + ") VALUES ('"
 						+ c.getName() + "', " + iBlack + ", " + iBlue + ", "
 						+ iWhite + ", " + iGreen + ", " + iRed + ", '"
 						+ c.getManaCost() + "', " + c.getCMC() + ", '"
@@ -183,37 +186,35 @@ public class MainDatabaseTools {
 						+ "', '" + c.getText() + "')";
 			} else if (!c.getCardType().contains("Land")
 					&& !c.getCardType().contains("Scheme")) {
-				sInsertCard = "INSERT INTO "
-						+ MagicHatDbHelper.DB_TABLE_ALLCARDS + " ("
-						+ MagicHatDbHelper.KEY_CARD_NAME + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISBLACK + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISBLUE + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISWHITE + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISGREEN + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISRED + ", "
-						+ MagicHatDbHelper.KEY_CARD_MANACOST + ", "
-						+ MagicHatDbHelper.KEY_CARD_CMC + ", "
-						+ MagicHatDbHelper.KEY_CARD_TYPE + ", "
-						+ MagicHatDbHelper.KEY_CARD_SUBTYPES + ", "
-						+ MagicHatDbHelper.KEY_CARD_TEXT + ") VALUES ('"
+				sInsertCard = "INSERT INTO " + CardDbUtil.DB_TABLE_ALLCARDS
+						+ " (" + CardDbUtil.KEY_CARD_NAME + ", "
+						+ CardDbUtil.KEY_CARD_ISBLACK + ", "
+						+ CardDbUtil.KEY_CARD_ISBLUE + ", "
+						+ CardDbUtil.KEY_CARD_ISWHITE + ", "
+						+ CardDbUtil.KEY_CARD_ISGREEN + ", "
+						+ CardDbUtil.KEY_CARD_ISRED + ", "
+						+ CardDbUtil.KEY_CARD_MANACOST + ", "
+						+ CardDbUtil.KEY_CARD_CMC + ", "
+						+ CardDbUtil.KEY_CARD_TYPE + ", "
+						+ CardDbUtil.KEY_CARD_SUBTYPES + ", "
+						+ CardDbUtil.KEY_CARD_TEXT + ") VALUES ('"
 						+ c.getName() + "', " + iBlack + ", " + iBlue + ", "
 						+ iWhite + ", " + iGreen + ", " + iRed + ", '"
 						+ c.getManaCost() + "', " + c.getCMC() + ", '"
 						+ c.getCardType() + "', '" + c.getCardSubType()
 						+ "', '" + c.getText() + "')";
 			} else {
-				sInsertCard = "INSERT INTO "
-						+ MagicHatDbHelper.DB_TABLE_ALLCARDS + " ("
-						+ MagicHatDbHelper.KEY_CARD_NAME + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISBLACK + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISBLUE + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISWHITE + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISGREEN + ", "
-						+ MagicHatDbHelper.KEY_CARD_ISRED + ", "
-						+ MagicHatDbHelper.KEY_CARD_CMC + ", "
-						+ MagicHatDbHelper.KEY_CARD_TYPE + ", "
-						+ MagicHatDbHelper.KEY_CARD_SUBTYPES + ", "
-						+ MagicHatDbHelper.KEY_CARD_TEXT + ") VALUES ('"
+				sInsertCard = "INSERT INTO " + CardDbUtil.DB_TABLE_ALLCARDS
+						+ " (" + CardDbUtil.KEY_CARD_NAME + ", "
+						+ CardDbUtil.KEY_CARD_ISBLACK + ", "
+						+ CardDbUtil.KEY_CARD_ISBLUE + ", "
+						+ CardDbUtil.KEY_CARD_ISWHITE + ", "
+						+ CardDbUtil.KEY_CARD_ISGREEN + ", "
+						+ CardDbUtil.KEY_CARD_ISRED + ", "
+						+ CardDbUtil.KEY_CARD_CMC + ", "
+						+ CardDbUtil.KEY_CARD_TYPE + ", "
+						+ CardDbUtil.KEY_CARD_SUBTYPES + ", "
+						+ CardDbUtil.KEY_CARD_TEXT + ") VALUES ('"
 						+ c.getName() + "', 0, 0, 0, 0, 0, 0, '"
 						+ c.getCardType() + "', '" + c.getCardSubType()
 						+ "', '" + c.getText() + "')";
@@ -233,10 +234,10 @@ public class MainDatabaseTools {
 
 			for (Expansion cs : c.getAllExpansions()) {
 				sInsertCardExpansionRel = "INSERT INTO "
-						+ MagicHatDbHelper.DB_TABLE_REL_CARD_EXP + " ("
-						+ MagicHatDbHelper.KEY_REL_EXP_ID + ", "
-						+ MagicHatDbHelper.KEY_REL_CARD_ID + ", "
-						+ MagicHatDbHelper.KEY_REL_PIC_URL + ") VALUES ('"
+						+ CardDbUtil.DB_TABLE_REL_CARD_EXP + " ("
+						+ CardDbUtil.KEY_REL_EXP_ID + ", "
+						+ CardDbUtil.KEY_REL_CARD_ID + ", "
+						+ CardDbUtil.KEY_REL_PIC_URL + ") VALUES ('"
 						+ getExpansionId(cs.getShortName(), conn) + "', "
 						+ cardId + ", '"
 						+ c.getExpansionImages().get(cs).toString() + "')";
@@ -251,13 +252,31 @@ public class MainDatabaseTools {
 			}
 		}
 		System.out.println("Done setting up Cards.");
+
+		String sCreateAndroidTable = "CREATE TABLE \"" + ANDROID_TABLE_NAME
+				+ "\" (\"locale\" TEXT DEFAULT 'en_US')";
+		String sInsertAndroidData = "INSERT INTO \"" + ANDROID_TABLE_NAME
+				+ "\" VALUES ('en_US')";
+		try {
+			PreparedStatement createAndroidTable = conn
+					.prepareStatement(sCreateAndroidTable);
+			createAndroidTable.execute();
+			createAndroidTable.close();
+			PreparedStatement insertAndroidData = conn
+					.prepareStatement(sInsertAndroidData);
+			insertAndroidData.execute();
+			insertAndroidData.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		System.out.println("Done setting up Database.");
 	}
 
 	private static List<Expansion> getAllExpansions(Connection conn) {
 		List<Expansion> allExpansions = new ArrayList<Expansion>();
 
 		String sSelectAllExpansions = "SELECT * FROM "
-				+ MagicHatDbHelper.DB_TABLE_ALLEXPANSIONS;
+				+ CardDbUtil.DB_TABLE_ALLEXPANSIONS;
 
 		Expansion exp;
 		try {
@@ -266,9 +285,9 @@ public class MainDatabaseTools {
 			ResultSet expRS = selectAllExpansions.executeQuery();
 			while (expRS.next()) {
 				exp = new Expansion(
-						expRS.getInt(MagicHatDbHelper.KEY_EXPANSION_ROWID),
-						expRS.getString(MagicHatDbHelper.KEY_EXPANSION_NAME),
-						expRS.getString(MagicHatDbHelper.KEY_EXPANSION_SHORTNAME));
+						expRS.getInt(CardDbUtil.KEY_EXPANSION_ROWID),
+						expRS.getString(CardDbUtil.KEY_EXPANSION_NAME),
+						expRS.getString(CardDbUtil.KEY_EXPANSION_SHORTNAME));
 
 				allExpansions.add(exp);
 			}
@@ -285,13 +304,12 @@ public class MainDatabaseTools {
 	private static int getCardId(String name, Connection conn) {
 		int cardId = 0;
 
-		String sCount = "SELECT count(*) FROM "
-				+ MagicHatDbHelper.DB_TABLE_ALLCARDS + " WHERE "
-				+ MagicHatDbHelper.KEY_CARD_NAME + " = '" + name + "'";
+		String sCount = "SELECT count(*) FROM " + CardDbUtil.DB_TABLE_ALLCARDS
+				+ " WHERE " + CardDbUtil.KEY_CARD_NAME + " = '" + name + "'";
 
 		String sSelectCardByName = "SELECT * FROM "
-				+ MagicHatDbHelper.DB_TABLE_ALLCARDS + " WHERE "
-				+ MagicHatDbHelper.KEY_CARD_NAME + " = '" + name + "'";
+				+ CardDbUtil.DB_TABLE_ALLCARDS + " WHERE "
+				+ CardDbUtil.KEY_CARD_NAME + " = '" + name + "'";
 
 		try {
 			PreparedStatement countPS = conn.prepareStatement(sCount);
@@ -303,7 +321,7 @@ public class MainDatabaseTools {
 						.prepareStatement(sSelectCardByName);
 				ResultSet cRS = selectCardByName.executeQuery();
 
-				cardId = cRS.getInt(MagicHatDbHelper.KEY_CARD_ROWID);
+				cardId = cRS.getInt(CardDbUtil.KEY_CARD_ROWID);
 			} else {
 				System.out
 						.println("MainDatabaseTools.getCardId: No unique card was found with name: "
@@ -320,13 +338,11 @@ public class MainDatabaseTools {
 		int expId = 0;
 
 		String sCount = "SELECT count(*) FROM "
-				+ MagicHatDbHelper.DB_TABLE_ALLEXPANSIONS + " WHERE "
-				+ MagicHatDbHelper.KEY_EXPANSION_SHORTNAME + " = '" + shortName
-				+ "'";
+				+ CardDbUtil.DB_TABLE_ALLEXPANSIONS + " WHERE "
+				+ CardDbUtil.KEY_EXPANSION_SHORTNAME + " = '" + shortName + "'";
 		String sSelectExpBySName = "SELECT * FROM "
-				+ MagicHatDbHelper.DB_TABLE_ALLEXPANSIONS + " WHERE "
-				+ MagicHatDbHelper.KEY_EXPANSION_SHORTNAME + " = '" + shortName
-				+ "'";
+				+ CardDbUtil.DB_TABLE_ALLEXPANSIONS + " WHERE "
+				+ CardDbUtil.KEY_EXPANSION_SHORTNAME + " = '" + shortName + "'";
 
 		try {
 			PreparedStatement countPS = conn.prepareStatement(sCount);
@@ -338,7 +354,7 @@ public class MainDatabaseTools {
 						.prepareStatement(sSelectExpBySName);
 				ResultSet cRS = selectExpBySName.executeQuery();
 
-				expId = cRS.getInt(MagicHatDbHelper.KEY_EXPANSION_ROWID);
+				expId = cRS.getInt(CardDbUtil.KEY_EXPANSION_ROWID);
 			} else {
 				System.out
 						.println("MainDatabaseTools.getExpansionId: No unique card was found with name: "
