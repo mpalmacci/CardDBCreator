@@ -20,10 +20,10 @@ public class MainDatabaseTools {
 	 * /Documents/workspace/cockatrice_20120702/cockatrice/cockatrice_mac_20120630
 	 * The default location for the Cards database is at:
 	 * /Users/mpalmacci/Library/Application
-	 * Support/Cockatrice/Cockatrice/cards.xml This setting lives in the
+	 * Support/Cockatrice/Cockatrice/cards.xml - This setting lives in the
 	 * Cockatrice Preferences In Oracle, select File/Download Sets
-	 * Information... Select the sets you want, then import all the Cards Go to
-	 * the Cards Database Location and add it to the directory:
+	 * Information... Select the sets you want, then import all the Cards - Go
+	 * to the Cards Database Location and add it to the directory:
 	 * /Users/mpalmacci/Documents/workspace/CardDBCreator
 	 * 
 	 * REPLACE ALL single quotation marks with two single quotation marks
@@ -31,6 +31,32 @@ public class MainDatabaseTools {
 	 * REPLACE ALL &quot; with \"
 	 * 
 	 * REPLACE ALL * with \*
+	 * 
+	 * =================********************=================********************
+	 * 
+	 * For SubType List: Go to http://gatherer.wizards.com/Pages/Advanced.aspx.
+	 * Right-click on Subtypes field - Select "Inspect Elements" Find the
+	 * section that lists the SubTypes - Currently starts with 'Advisor'
+	 * 
+	 * Copy and paste that into an XML document. Just make sure you have all the
+	 * "<a href"s in that section pasted
+	 * 
+	 * Try to clean up the XML document as best you can - XML Documents needs to
+	 * end every tag started - Attempt to remove all unnecessary tags (Keep the
+	 * "<a href"s!)
+	 * 
+	 * Replace all the single quotation marks with two single quotation marks
+	 * 
+	 * Make sure the charVal will not have an \n or a new line in it
+	 * 
+	 * 
+	 * =================********************=================********************
+	 * 
+	 * Enhancements needed:
+	 * 
+	 * Utilize Multi-Threading to handle multiple actions at a time (which
+	 * ones???) - See if you can utilize the code in CardDbUtil for
+	 * getAllExpansions, and getCardIds, etc.
 	 */
 
 	private static String ANDROID_TABLE_NAME = "android_metadata";
@@ -42,6 +68,8 @@ public class MainDatabaseTools {
 			Connection conn = db.getConnection();
 			createSchema(conn);
 			setupCards(conn);
+			setupSubTypes(conn);
+			setupAndroid(conn);
 			db.closeConnection();
 		} catch (Exception exc) {
 			exc.printStackTrace();
@@ -88,6 +116,11 @@ public class MainDatabaseTools {
 				+ CardDbUtil.KEY_REL_EXP_ID + ") REFERENCES "
 				+ CardDbUtil.DB_TABLE_ALLEXPANSIONS + "("
 				+ CardDbUtil.KEY_EXPANSION_ROWID + "));";
+		String sCreateSubTypeTable = "CREATE TABLE "
+				+ CardDbUtil.DB_TABLE_SUB_TYPES + " ("
+				+ CardDbUtil.KEY_SUB_TYPE_ROWID
+				+ " INTEGER PRIMARY KEY AUTOINCREMENT, "
+				+ CardDbUtil.KEY_SUB_TYPE_NAME + " TEXT NOT NULL);";
 
 		try {
 			PreparedStatement dropExpansions = conn
@@ -96,12 +129,15 @@ public class MainDatabaseTools {
 					.prepareStatement(dropTable(CardDbUtil.DB_TABLE_ALLCARDS));
 			PreparedStatement dropPics = conn
 					.prepareStatement(dropTable(CardDbUtil.DB_TABLE_REL_CARD_EXP));
+			PreparedStatement dropSubType = conn
+					.prepareStatement(dropTable(CardDbUtil.DB_TABLE_SUB_TYPES));
 			PreparedStatement dropDroid = conn
 					.prepareStatement(dropTable(ANDROID_TABLE_NAME));
 
 			dropExpansions.execute();
 			dropCards.execute();
 			dropPics.execute();
+			dropSubType.execute();
 			dropDroid.execute();
 
 			PreparedStatement createExpansionTable = conn
@@ -110,10 +146,13 @@ public class MainDatabaseTools {
 					.prepareStatement(sCreateCardTable);
 			PreparedStatement createExpansionPicTable = conn
 					.prepareStatement(sCreateExpansionPicTable);
+			PreparedStatement createSubTypeTable = conn
+					.prepareStatement(sCreateSubTypeTable);
 
 			createExpansionTable.execute();
 			createCardTable.execute();
 			createExpansionPicTable.execute();
+			createSubTypeTable.execute();
 		} catch (SQLException exc) {
 			exc.printStackTrace();
 		}
@@ -252,7 +291,54 @@ public class MainDatabaseTools {
 			}
 		}
 		System.out.println("Done setting up Cards.");
+	}
 
+	private static void setupSubTypes(Connection conn) {
+		String sCreateSubTypeTable = "CREATE TABLE "
+				+ CardDbUtil.DB_TABLE_SUB_TYPES + " ("
+				+ CardDbUtil.KEY_SUB_TYPE_ROWID
+				+ " INTEGER PRIMARY KEY AUTOINCREMENT, "
+				+ CardDbUtil.KEY_SUB_TYPE_NAME + " TEXT NOT NULL);";
+		try {
+			PreparedStatement dropSubType = conn
+					.prepareStatement(dropTable(CardDbUtil.DB_TABLE_SUB_TYPES));
+			dropSubType.execute();
+			PreparedStatement createSubTypeTable = conn
+					.prepareStatement(sCreateSubTypeTable);
+			createSubTypeTable.execute();
+		} catch (SQLException exc) {
+			exc.printStackTrace();
+		}
+
+		List<String> allSubTypes = new ArrayList<String>();
+
+		SAXSubTypeDataParser sSTdp = new SAXSubTypeDataParser();
+		try {
+			sSTdp.parseCardXml();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		allSubTypes = sSTdp.getAllSubTypes();
+
+		String sInsertSubType;
+		for (String subType : allSubTypes) {
+			sInsertSubType = "INSERT INTO " + CardDbUtil.DB_TABLE_SUB_TYPES
+					+ " (" + CardDbUtil.KEY_SUB_TYPE_NAME + ") VALUES ('"
+					+ subType + "')";
+			try {
+				PreparedStatement insertSubType = conn
+						.prepareStatement(sInsertSubType);
+				insertSubType.execute();
+				insertSubType.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		System.out.println("Done setting up SubTypes.");
+	}
+
+	private static void setupAndroid(Connection conn) {
 		String sCreateAndroidTable = "CREATE TABLE \"" + ANDROID_TABLE_NAME
 				+ "\" (\"locale\" TEXT DEFAULT 'en_US')";
 		String sInsertAndroidData = "INSERT INTO \"" + ANDROID_TABLE_NAME
@@ -269,7 +355,7 @@ public class MainDatabaseTools {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		System.out.println("Done setting up Database.");
+		System.out.println("Done setting up Android.");
 	}
 
 	private static List<Expansion> getAllExpansions(Connection conn) {
