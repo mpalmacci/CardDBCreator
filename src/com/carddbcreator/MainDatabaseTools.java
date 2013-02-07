@@ -1,6 +1,7 @@
 package com.carddbcreator;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.ResultSet;
@@ -16,14 +17,14 @@ public class MainDatabaseTools {
 	/*
 	 * IMPORTANT NOTES TO RUN THIS PROGRAM: In order to run this you need to
 	 * first Open Oracle (download the latest version if necessary):
-	 * /Users/mpalmacci
-	 * /Documents/workspace/cockatrice_20120702/cockatrice/cockatrice_mac_20120630
+	 * /Users/mpalmacci/Documents/workspace/cockatrice_mac_20120630 **********
 	 * The default location for the Cards database is at:
-	 * /Users/mpalmacci/Library/Application
-	 * Support/Cockatrice/Cockatrice/cards.xml - This setting lives in the
-	 * Cockatrice Preferences In Oracle, select File/Download Sets
-	 * Information... Select the sets you want, then import all the Cards - Go
-	 * to the Cards Database Location and add it to the directory:
+	 * /Users/mpalmacci/Library
+	 * /Application/Support/Cockatrice/Cockatrice/cards.xml
+	 * ****************************** This setting lives in the Cockatrice
+	 * Preferences In Oracle, select File/Download Sets Information... Select
+	 * the sets you want, then import all the Cards - Go to the Cards Database
+	 * Location and add it to the directory:
 	 * /Users/mpalmacci/Documents/workspace/CardDBCreator
 	 * 
 	 * REPLACE ALL single quotation marks with two single quotation marks
@@ -63,16 +64,33 @@ public class MainDatabaseTools {
 
 	public static void main(String[] args) {
 
-		try {
-			SQLiteDb db = new SQLiteDb();
-			Connection conn = db.getConnection();
-			createSchema(conn);
-			setupCards(conn);
-			setupSubTypes(conn);
-			setupAndroid(conn);
-			db.closeConnection();
-		} catch (Exception exc) {
-			exc.printStackTrace();
+		// Set the arguments to equal "Install" to trigger a new install or
+		// "Update" to update a list of expansions
+		switch (args[0]) {
+		case "Install":
+			try {
+				SQLiteDb db = new SQLiteDb();
+				Connection conn = db.getConnection();
+				createSchema(conn);
+				setupCards(conn);
+				setupSubTypes(conn);
+				setupAndroid(conn);
+				db.closeConnection();
+			} catch (Exception exc) {
+				exc.printStackTrace();
+			}
+			break;
+		case "Update":
+			try {
+				Class.forName("org.sqlite.JDBC");
+				Connection conn = DriverManager
+						.getConnection("jdbc:sqlite:/Users/mpalmacci/Documents/workspace/TheMagicHat/assets/cards copy.db");
+				addNewCards(conn);
+				conn.close();
+			} catch (Exception exc) {
+				exc.printStackTrace();
+			}
+			break;
 		}
 	}
 
@@ -171,12 +189,12 @@ public class MainDatabaseTools {
 
 		allExpansions = sdp.getAllExpansions();
 
-		for (Expansion cs : allExpansions) {
+		for (Expansion exp : allExpansions) {
 			String sInsertExpansion = "INSERT INTO "
 					+ CardDbUtil.DB_TABLE_ALLEXPANSIONS + "("
 					+ CardDbUtil.KEY_EXPANSION_NAME + ", "
 					+ CardDbUtil.KEY_EXPANSION_SHORTNAME + ") VALUES ('"
-					+ cs.getName() + "', '" + cs.getShortName() + "');";
+					+ exp.getName() + "', '" + exp.getShortName() + "');";
 
 			try {
 				PreparedStatement insertExpansion = conn
@@ -191,8 +209,8 @@ public class MainDatabaseTools {
 		allExpansions = getAllExpansions(conn);
 		allCards = sdp.getAllCards();
 
-		int iBlue, iBlack, iWhite, iGreen, iRed, cardId;
-		String sInsertCardExpansionRel = new String(), sInsertCard = new String();
+		int iBlue, iBlack, iWhite, iGreen, iRed;
+		String sInsertCard = new String();
 		for (Card c : allCards) {
 			iBlue = c.isBlue() ? 1 : 0;
 			iBlack = c.isBlack() ? 1 : 0;
@@ -267,28 +285,7 @@ public class MainDatabaseTools {
 				e.printStackTrace();
 			}
 
-			cardId = getCardId(c.getName(), conn);
-
-			sInsertCardExpansionRel = new String();
-
-			for (Expansion cs : c.getAllExpansions()) {
-				sInsertCardExpansionRel = "INSERT INTO "
-						+ CardDbUtil.DB_TABLE_REL_CARD_EXP + " ("
-						+ CardDbUtil.KEY_REL_EXP_ID + ", "
-						+ CardDbUtil.KEY_REL_CARD_ID + ", "
-						+ CardDbUtil.KEY_REL_PIC_URL + ") VALUES ('"
-						+ getExpansionId(cs.getShortName(), conn) + "', "
-						+ cardId + ", '"
-						+ c.getExpansionImages().get(cs).toString() + "')";
-				try {
-					PreparedStatement insertCardExpansionRel = conn
-							.prepareStatement(sInsertCardExpansionRel);
-					insertCardExpansionRel.execute();
-					insertCardExpansionRel.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-			}
+			insertCardExpansionRelationship(c, conn);
 		}
 		System.out.println("Done setting up Cards.");
 	}
@@ -356,6 +353,198 @@ public class MainDatabaseTools {
 			e.printStackTrace();
 		}
 		System.out.println("Done setting up Android.");
+	}
+
+	private static void addNewCards(Connection conn) {
+		List<Expansion> allNewExpansions = new ArrayList<Expansion>();
+		List<Card> allNewCards = new ArrayList<Card>();
+
+		SAXDataParser sdp = new SAXDataParser();
+		try {
+			sdp.parseCardXml();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		allNewExpansions = sdp.getAllExpansions();
+
+		for (Expansion exp : allNewExpansions) {
+			String sSelectExp = "SELECT " + CardDbUtil.KEY_EXPANSION_SHORTNAME
+					+ " FROM " + CardDbUtil.DB_TABLE_ALLEXPANSIONS + " WHERE "
+					+ CardDbUtil.KEY_EXPANSION_SHORTNAME + " = '"
+					+ exp.getShortName() + "';";
+
+			try {
+				PreparedStatement selectExpansion = conn
+						.prepareStatement(sSelectExp);
+				ResultSet expRS = selectExpansion.executeQuery();
+				if (expRS.next()) {
+					selectExpansion.close();
+					continue;
+				}
+				selectExpansion.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+
+			String sInsertExpansion = "INSERT INTO "
+					+ CardDbUtil.DB_TABLE_ALLEXPANSIONS + "("
+					+ CardDbUtil.KEY_EXPANSION_NAME + ", "
+					+ CardDbUtil.KEY_EXPANSION_SHORTNAME + ") VALUES ('"
+					+ exp.getName() + "', '" + exp.getShortName() + "');";
+
+			try {
+				PreparedStatement insertExpansion = conn
+						.prepareStatement(sInsertExpansion);
+				insertExpansion.execute();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		System.out.println("Done adding new Expansions.");
+
+		allNewExpansions = getAllExpansions(conn);
+		allNewCards = sdp.getAllCards();
+
+		int iBlue, iBlack, iWhite, iGreen, iRed;
+		String sInsertCard = new String();
+		for (Card c : allNewCards) {
+			String sSelectCard = "SELECT " + CardDbUtil.KEY_CARD_NAME
+					+ " FROM " + CardDbUtil.DB_TABLE_ALLCARDS + " WHERE "
+					+ CardDbUtil.KEY_CARD_NAME + " = '" + c.getName() + "';";
+
+			try {
+				PreparedStatement selectCard = conn
+						.prepareStatement(sSelectCard);
+				ResultSet cardRS = selectCard.executeQuery();
+				if (cardRS.next()) {
+					selectCard.close();
+					insertCardExpansionRelationship(c, conn);
+					continue;
+				}
+				selectCard.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+
+			iBlue = c.isBlue() ? 1 : 0;
+			iBlack = c.isBlack() ? 1 : 0;
+			iWhite = c.isWhite() ? 1 : 0;
+			iGreen = c.isGreen() ? 1 : 0;
+			iRed = c.isRed() ? 1 : 0;
+
+			sInsertCard = new String();
+
+			if (c.getCardType().contains("Creature")) {
+				sInsertCard = "INSERT INTO " + CardDbUtil.DB_TABLE_ALLCARDS
+						+ " (" + CardDbUtil.KEY_CARD_NAME + ", "
+						+ CardDbUtil.KEY_CARD_ISBLACK + ", "
+						+ CardDbUtil.KEY_CARD_ISBLUE + ", "
+						+ CardDbUtil.KEY_CARD_ISWHITE + ", "
+						+ CardDbUtil.KEY_CARD_ISGREEN + ", "
+						+ CardDbUtil.KEY_CARD_ISRED + ", "
+						+ CardDbUtil.KEY_CARD_MANACOST + ", "
+						+ CardDbUtil.KEY_CARD_CMC + ", "
+						+ CardDbUtil.KEY_CARD_TYPE + ", "
+						+ CardDbUtil.KEY_CARD_SUBTYPES + ", "
+						+ CardDbUtil.KEY_CARD_POWER + ", "
+						+ CardDbUtil.KEY_CARD_TOUGHNESS + ", "
+						+ CardDbUtil.KEY_CARD_TEXT + ") VALUES ('"
+						+ c.getName() + "', " + iBlack + ", " + iBlue + ", "
+						+ iWhite + ", " + iGreen + ", " + iRed + ", '"
+						+ c.getManaCost() + "', " + c.getCMC() + ", '"
+						+ c.getCardType() + "', '" + c.getCardSubType()
+						+ "', '" + c.getPower() + "', '" + c.getToughness()
+						+ "', '" + c.getText() + "')";
+			} else if (!c.getCardType().contains("Land")
+					&& !c.getCardType().contains("Scheme")) {
+				sInsertCard = "INSERT INTO " + CardDbUtil.DB_TABLE_ALLCARDS
+						+ " (" + CardDbUtil.KEY_CARD_NAME + ", "
+						+ CardDbUtil.KEY_CARD_ISBLACK + ", "
+						+ CardDbUtil.KEY_CARD_ISBLUE + ", "
+						+ CardDbUtil.KEY_CARD_ISWHITE + ", "
+						+ CardDbUtil.KEY_CARD_ISGREEN + ", "
+						+ CardDbUtil.KEY_CARD_ISRED + ", "
+						+ CardDbUtil.KEY_CARD_MANACOST + ", "
+						+ CardDbUtil.KEY_CARD_CMC + ", "
+						+ CardDbUtil.KEY_CARD_TYPE + ", "
+						+ CardDbUtil.KEY_CARD_SUBTYPES + ", "
+						+ CardDbUtil.KEY_CARD_TEXT + ") VALUES ('"
+						+ c.getName() + "', " + iBlack + ", " + iBlue + ", "
+						+ iWhite + ", " + iGreen + ", " + iRed + ", '"
+						+ c.getManaCost() + "', " + c.getCMC() + ", '"
+						+ c.getCardType() + "', '" + c.getCardSubType()
+						+ "', '" + c.getText() + "')";
+			} else {
+				sInsertCard = "INSERT INTO " + CardDbUtil.DB_TABLE_ALLCARDS
+						+ " (" + CardDbUtil.KEY_CARD_NAME + ", "
+						+ CardDbUtil.KEY_CARD_ISBLACK + ", "
+						+ CardDbUtil.KEY_CARD_ISBLUE + ", "
+						+ CardDbUtil.KEY_CARD_ISWHITE + ", "
+						+ CardDbUtil.KEY_CARD_ISGREEN + ", "
+						+ CardDbUtil.KEY_CARD_ISRED + ", "
+						+ CardDbUtil.KEY_CARD_CMC + ", "
+						+ CardDbUtil.KEY_CARD_TYPE + ", "
+						+ CardDbUtil.KEY_CARD_SUBTYPES + ", "
+						+ CardDbUtil.KEY_CARD_TEXT + ") VALUES ('"
+						+ c.getName() + "', 0, 0, 0, 0, 0, 0, '"
+						+ c.getCardType() + "', '" + c.getCardSubType()
+						+ "', '" + c.getText() + "')";
+			}
+			try {
+				PreparedStatement insertCard = conn
+						.prepareStatement(sInsertCard);
+				insertCard.execute();
+				insertCard.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+
+			insertCardExpansionRelationship(c, conn);
+		}
+		System.out.println("Done setting up Cards.");
+	}
+
+	private static void insertCardExpansionRelationship(Card c, Connection conn) {
+		int cardId = getCardId(c.getName(), conn);
+
+		String sInsertCardExpansionRel = new String();
+
+		for (Expansion exp : c.getAllExpansions()) {
+			String sSelectRel = "SELECT " + CardDbUtil.KEY_REL_CARD_ID
+					+ " FROM " + CardDbUtil.DB_TABLE_REL_CARD_EXP + " WHERE "
+					+ CardDbUtil.KEY_REL_CARD_ID + " = " + cardId + " AND "
+					+ CardDbUtil.KEY_REL_EXP_ID + " = "
+					+ getExpansionId(exp.getShortName(), conn) + ";";
+
+			try {
+				PreparedStatement selectRel = conn.prepareStatement(sSelectRel);
+				ResultSet relRS = selectRel.executeQuery();
+				if (relRS.next()) {
+					selectRel.close();
+					continue;
+				}
+				selectRel.close();
+			} catch (SQLException exc) {
+				exc.printStackTrace();
+			}
+
+			sInsertCardExpansionRel = "INSERT INTO "
+					+ CardDbUtil.DB_TABLE_REL_CARD_EXP + " ("
+					+ CardDbUtil.KEY_REL_EXP_ID + ", "
+					+ CardDbUtil.KEY_REL_CARD_ID + ", "
+					+ CardDbUtil.KEY_REL_PIC_URL + ") VALUES ('"
+					+ getExpansionId(exp.getShortName(), conn) + "', " + cardId
+					+ ", '" + c.getExpansionImages().get(exp).toString() + "')";
+			try {
+				PreparedStatement insertCardExpansionRel = conn
+						.prepareStatement(sInsertCardExpansionRel);
+				insertCardExpansionRel.execute();
+				insertCardExpansionRel.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private static List<Expansion> getAllExpansions(Connection conn) {
