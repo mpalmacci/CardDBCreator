@@ -84,7 +84,7 @@ public class MainDatabaseTools {
 			try {
 				Class.forName("org.sqlite.JDBC");
 				Connection conn = DriverManager
-						.getConnection("jdbc:sqlite:/Users/mpalmacci/Documents/workspace/TheMagicHat/assets/cards copy.db");
+						.getConnection("jdbc:sqlite:/Users/mpalmacci/Documents/workspace/TheMagicHat/assets/cards.db");
 				addNewCards(conn);
 				conn.close();
 			} catch (Exception exc) {
