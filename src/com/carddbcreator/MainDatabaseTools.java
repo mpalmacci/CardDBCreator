@@ -9,22 +9,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.magichat.Card;
-import com.magichat.Expansion;
-import com.magichat.CardDbUtil;
+import com.magichat.cards.Card;
+import com.magichat.cards.CardDbUtil;
+import com.magichat.cards.Expansion;
 
 public class MainDatabaseTools {
 	/*
 	 * IMPORTANT NOTES TO RUN THIS PROGRAM: In order to run this you need to
-	 * first Open Oracle (download the latest version if necessary):
-	 * /Users/mpalmacci/Documents/workspace/cockatrice_mac_20120630 **********
-	 * The default location for the Cards database is at:
-	 * /Users/mpalmacci/Library
-	 * /Application/Support/Cockatrice/Cockatrice/cards.xml
-	 * ****************************** This setting lives in the Cockatrice
-	 * Preferences In Oracle, select File/Download Sets Information... Select
-	 * the sets you want, then import all the Cards - Go to the Cards Database
-	 * Location and add it to the directory:
+	 * first open Cockatrice's Oracle on a PC (download the latest version if
+	 * necessary): The default location for the Cards database is at:
+	 * C:\Users\Matthew\AppData\Local\Cockatrice\Cockatrice\cards.xml. This
+	 * setting lives in the Cockatrice Preferences in Oracle.
+	 * ****************************** select File/"Download sets information..."
+	 * You'll have to "Uncheck All" and just check any new sets to add. Then
+	 * import all the Cards - Go to the Cards Database Location and add it to
+	 * the directory on this Mac:
 	 * /Users/mpalmacci/Documents/workspace/CardDBCreator
 	 * 
 	 * REPLACE ALL single quotation marks with two single quotation marks
@@ -36,20 +35,15 @@ public class MainDatabaseTools {
 	 * =================********************=================********************
 	 * 
 	 * For SubType List: Go to http://gatherer.wizards.com/Pages/Advanced.aspx.
-	 * Right-click on Subtypes field - Select "Inspect Elements" Find the
+	 * Right-click on Subtypes field - Select "View Page Source" Find the
 	 * section that lists the SubTypes - Currently starts with 'Advisor'
 	 * 
 	 * Copy and paste that into an XML document. Just make sure you have all the
-	 * "<a href"s in that section pasted
+	 * "<a href"s in that section pasted.
 	 * 
-	 * Try to clean up the XML document as best you can - XML Documents needs to
-	 * end every tag started - Attempt to remove all unnecessary tags (Keep the
-	 * "<a href"s!)
-	 * 
-	 * Replace all the single quotation marks with two single quotation marks
+	 * REPLACE ALL the single quotation marks with two single quotation marks
 	 * 
 	 * Make sure the charVal will not have an \n or a new line in it
-	 * 
 	 * 
 	 * =================********************=================********************
 	 * 
@@ -66,6 +60,10 @@ public class MainDatabaseTools {
 
 		// Set the arguments to equal "Install" to trigger a new install or
 		// "Update" to update a list of expansions
+		// Go into project Properties, select Run/Debug Settings
+		// Select this project, and select Edit
+		// Go to the Arguments tab
+		// Enter the value in the Program arguments
 		switch (args[0]) {
 		case "Install":
 			try {
@@ -79,6 +77,7 @@ public class MainDatabaseTools {
 			} catch (Exception exc) {
 				exc.printStackTrace();
 			}
+			System.out.println("Done installing the database.");
 			break;
 		case "Update":
 			try {
@@ -90,6 +89,7 @@ public class MainDatabaseTools {
 			} catch (Exception exc) {
 				exc.printStackTrace();
 			}
+			System.out.println("Done updating the database.");
 			break;
 		}
 	}
@@ -112,11 +112,18 @@ public class MainDatabaseTools {
 				+ CardDbUtil.KEY_CARD_ISBLACK + " INTEGER NOT NULL, "
 				+ CardDbUtil.KEY_CARD_ISWHITE + " INTEGER NOT NULL, "
 				+ CardDbUtil.KEY_CARD_ISGREEN + " INTEGER NOT NULL, "
-				+ CardDbUtil.KEY_CARD_ISRED + " INTEGER NOT NULL, "
-				+ CardDbUtil.KEY_CARD_MANACOST + " TEXT, "
-				+ CardDbUtil.KEY_CARD_CMC + " INTEGER NOT NULL, "
-				+ CardDbUtil.KEY_CARD_TYPE + " TEXT NOT NULL, "
-				+ CardDbUtil.KEY_CARD_SUBTYPES + " TEXT, "
+				+ CardDbUtil.KEY_CARD_ISRED
+				+ " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_CARD_MANACOST
+				+ " TEXT, "
+				+ CardDbUtil.KEY_CARD_CMC
+				+ " INTEGER NOT NULL, "
+				+ CardDbUtil.KEY_CARD_TYPE
+				+ " TEXT NOT NULL, "
+				+ CardDbUtil.KEY_CARD_SUBTYPES
+				+ " TEXT, "
+				// Strangely enough, Power and Toughness with "*"
+				// are still showing while this is an Integer
 				+ CardDbUtil.KEY_CARD_POWER + " INTEGER, "
 				+ CardDbUtil.KEY_CARD_TOUGHNESS + " INTEGER, "
 				+ CardDbUtil.KEY_CARD_RARITY + " TEXT, "

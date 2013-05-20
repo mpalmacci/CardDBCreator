@@ -10,8 +10,8 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import com.magichat.Card;
-import com.magichat.Expansion;
+import com.magichat.cards.Card;
+import com.magichat.cards.Expansion;
 
 public class SAXCardsActivityHandler extends DefaultHandler {
 	List<Expansion> allExpansions = new ArrayList<Expansion>();

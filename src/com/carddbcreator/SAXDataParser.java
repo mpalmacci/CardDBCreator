@@ -14,8 +14,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
-import com.magichat.Card;
-import com.magichat.Expansion;
+import com.magichat.cards.Card;
+import com.magichat.cards.Expansion;
 
 public class SAXDataParser {
 
